@@ -46,7 +46,6 @@ LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", 150))
 async def serve_frontend():
     """Serve the main HTML interface"""
     try:
-        import os
         # Always resolve index.html relative to this file's location
         base_dir = os.path.dirname(os.path.abspath(__file__))
         index_path = os.path.join(base_dir, "index.html")
@@ -63,7 +62,6 @@ def parse_keys_and_types(raw_questions: str):
         keys_list: list of keys in order
         type_map: dict key -> casting function
     """
-    import re
     pattern = r"-\s*`([^`]+)`\s*:\s*(\w+)"
     matches = re.findall(pattern, raw_questions)
     type_map_def = {
