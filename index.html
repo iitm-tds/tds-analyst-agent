@@ -3,279 +3,578 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>TDS Data Analyst Agent</title>
+  <title>AI Data Intelligence Hub</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    * { margin:0; padding:0; box-sizing:border-box; }
+    * { 
+      margin: 0; 
+      padding: 0; 
+      box-sizing: border-box; 
+    }
+    
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+      --bg-primary: #0f0f23;
+      --bg-secondary: #1a1a2e;
+      --bg-tertiary: #16213e;
+      --text-primary: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #64748b;
+      --border: #334155;
+      --glass: rgba(255, 255, 255, 0.05);
+      --glass-border: rgba(255, 255, 255, 0.1);
+    }
+    
     body {
-      font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-      background: #f7f8fa;
-      color: #222;
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-tertiary) 100%);
+      color: var(--text-primary);
       min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
     }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: 
+        radial-gradient(circle at 20% 80%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 40% 40%, rgba(6, 182, 212, 0.1) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
     .container {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 32px 20px;
-      background: #fff;
-      border-radius: 18px;
-      box-shadow: 0 4px 32px rgba(60,80,120,0.10), 0 1.5px 4px rgba(60,80,120,0.06);
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+      position: relative;
     }
+    
     .header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 3rem;
+      position: relative;
     }
+    
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: -1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+      border-radius: 2px;
+    }
+    
     .header h1 {
-      font-size: 2.2rem;
+      font-size: 3.5rem;
       font-weight: 700;
-      color: #3a4668;
-      margin-bottom: 8px;
-      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
     }
+    
     .header p {
-      font-size: 1.08rem;
-      color: #6b7a99;
-      opacity: 0.92;
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.6;
     }
+    
     .main-card {
-      background: #f3f6fa;
-      border-radius: 14px;
-      box-shadow: 0 2px 8px rgba(60,80,120,0.07);
-      padding: 28px 18px 22px 18px;
-      margin-bottom: 24px;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 
+        0 25px 50px -12px rgba(0, 0, 0, 0.25),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      position: relative;
+      overflow: hidden;
     }
+    
+    .main-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    }
+    
+    .form-group {
+      margin-bottom: 2rem;
+    }
+    
     .form-group label {
       display: block;
-      margin-bottom: 7px;
+      margin-bottom: 0.75rem;
       font-weight: 600;
-      color: #3a4668;
-      letter-spacing: 0.2px;
+      color: var(--text-primary);
+      font-size: 1.1rem;
+      letter-spacing: 0.025em;
     }
+    
+    .file-input-wrapper {
+      position: relative;
+    }
+    
     .file-input {
       width: 100%;
-      padding: 14px;
-      border: 2px dashed #b6c3e0;
-      border-radius: 7px;
-      background: #eaf0fb;
-      color: #6b7a99;
+      padding: 2rem;
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
       cursor: pointer;
       text-align: center;
-      transition: border-color 0.2s, background 0.2s, color 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       font-size: 1rem;
+      position: relative;
+      overflow: hidden;
     }
-    .file-input:hover {
-      border-color: #7b9cff;
-      background: #f5f8ff;
-      color: #3a4668;
-    }
-    .file-info {
-      margin-top: 8px;
-      padding: 8px 12px;
-      background: #eaf0fb;
-      border-radius: 5px;
-      font-size: 13px;
-      color: #4a5a7a;
-      display: none;
-    }
-    .btn {
-      background: linear-gradient(90deg, #7b9cff 0%, #a3bffa 100%);
-      color: #fff;
-      border: none;
-      padding: 13px 0;
-      border-radius: 7px;
-      font-size: 1.08rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: box-shadow 0.2s, background 0.2s;
+    
+    .file-input::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
       width: 100%;
-      margin-bottom: 0;
-      box-shadow: 0 2px 8px rgba(123,156,255,0.08);
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+      transition: left 0.5s;
     }
-    .btn:hover {
-      background: linear-gradient(90deg, #6b7a99 0%, #7b9cff 100%);
-      box-shadow: 0 4px 16px rgba(123,156,255,0.13);
+    
+    .file-input:hover::before {
+      left: 100%;
     }
-    .btn:disabled {
-      background: #b6c3e0;
-      cursor: not-allowed;
-      box-shadow: none;
+    
+    .file-input:hover {
+      border-color: var(--primary);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
     }
-    .btn-secondary {
-      background: #eaf0fb;
-      color: #3a4668;
-      border: 1px solid #b6c3e0;
-      margin-top: 0;
-      margin-bottom: 0;
+    
+    .file-input input[type="file"] {
+      position: absolute;
+      opacity: 0;
+      width: 100%;
+      height: 100%;
+      cursor: pointer;
     }
-    .btn-secondary:hover {
-      background: #f3f6fa;
-      color: #222;
-      border-color: #7b9cff;
+    
+    .file-info {
+      margin-top: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      display: none;
+      animation: slideIn 0.3s ease-out;
     }
+    
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
     .button-group {
       display: flex;
-      gap: 10px;
-      margin-top: 18px;
+      gap: 1rem;
+      margin-top: 2rem;
       flex-wrap: wrap;
     }
+    
+    .btn {
+      flex: 1;
+      min-width: 200px;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: var(--text-primary);
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
+    }
+    
+    .btn:disabled {
+      background: var(--bg-tertiary);
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-secondary {
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      color: var(--text-secondary);
+    }
+    
+    .btn-secondary:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--primary);
+    }
+    
     .loading {
       display: none;
       text-align: center;
-      padding: 18px 0;
+      padding: 3rem 0;
     }
+    
     .spinner {
-      border: 4px solid #eaf0fb;
-      border-top: 4px solid #7b9cff;
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--bg-tertiary);
+      border-top: 3px solid var(--primary);
       border-radius: 50%;
-      width: 36px;
-      height: 36px;
       animation: spin 1s linear infinite;
-      margin: 0 auto 12px;
+      margin: 0 auto 1.5rem;
     }
-    @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .loading p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 500;
+    }
+    
     .results {
       display: none;
-      margin-top: 24px;
+      margin-top: 3rem;
+      animation: fadeInUp 0.5s ease-out;
     }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .results h3 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 2rem;
+      text-align: center;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
     .result-item {
-      background: #fff;
-      border-left: 4px solid #7b9cff;
-      padding: 18px 16px;
-      margin-bottom: 16px;
-      border-radius: 0 8px 8px 0;
-      box-shadow: 0 1.5px 6px rgba(60,80,120,0.07);
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
     }
+    
+    .result-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--primary), var(--secondary));
+    }
+    
+    .result-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    
     .question {
-      font-weight: 600;
-      color: #3a4668;
-      margin-bottom: 10px;
-      font-size: 1.08rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+      font-family: 'JetBrains Mono', monospace;
     }
+    
     .answer {
-      color: #444;
-      line-height: 1.6;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      font-size: 1rem;
     }
+    
     .answer pre {
-      background: #f3f6fa;
-      color: #3a4668;
-      border-radius: 5px;
-      padding: 12px;
-      font-size: 0.98rem;
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-radius: 12px;
+      padding: 1.5rem;
+      font-size: 0.9rem;
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid var(--border);
+      overflow-x: auto;
+      margin: 1rem 0;
     }
+    
     .answer img {
       max-width: 100%;
       height: auto;
-      border-radius: 7px;
-      margin: 10px 0;
-      box-shadow: 0 2px 8px rgba(123,156,255,0.10);
+      border-radius: 12px;
+      margin: 1rem 0;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: all 0.3s ease;
+      border: 2px solid var(--glass-border);
     }
+    
     .answer img:hover {
-      transform: scale(1.03);
+      transform: scale(1.02);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      border-color: var(--primary);
     }
+    
     .error {
-      background: #ffeaea;
-      border-left-color: #ff6b6b;
-      color: #b23c3c;
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--error);
     }
+    
+    .error::before {
+      background: var(--error);
+    }
+    
     .modal {
       display: none;
       position: fixed;
       z-index: 1000;
-      left: 0; top: 0; width: 100%; height: 100%;
-      background: rgba(60,80,120,0.85);
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(15, 15, 35, 0.95);
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.3s ease-out;
     }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
     .modal-content {
       margin: auto;
       display: block;
-      width: 80%;
-      max-width: 700px;
-      max-height: 80%;
+      width: 90%;
+      max-width: 800px;
+      max-height: 90%;
       object-fit: contain;
+      border-radius: 16px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
     }
+    
     .close {
       position: absolute;
-      top: 15px;
-      right: 35px;
-      color: #3a4668;
-      font-size: 40px;
+      top: 20px;
+      right: 40px;
+      color: var(--text-primary);
+      font-size: 50px;
       font-weight: bold;
       cursor: pointer;
-      transition: color 0.2s;
+      transition: all 0.3s ease;
+      background: var(--glass);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--glass-border);
+      border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
     }
-    .close:hover { color: #7b9cff; }
+    
+    .close:hover {
+      color: var(--primary);
+      transform: scale(1.1);
+    }
+    
+    .floating-particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) rotate(0deg); opacity: 0; }
+      50% { transform: translateY(-20px) rotate(180deg); opacity: 1; }
+    }
+    
     @media (max-width: 768px) {
-      .container { padding: 10px; }
-      .header h1 { font-size: 1.5rem; }
-      .main-card { padding: 12px; }
+      .container { padding: 1rem; }
+      .header h1 { font-size: 2.5rem; }
+      .main-card { padding: 1.5rem; }
       .button-group { flex-direction: column; }
-      .btn-secondary { width: 100%; }
+      .btn { min-width: 100%; }
+      .file-input { padding: 1.5rem; }
     }
   </style>
 </head>
 <body>
+  <div class="floating-particles" id="particles"></div>
+  
   <div class="container">
     <div class="header">
-  <h1>📊 TDS Data Analyst Agent</h1>
-      <p>Upload your questions file and optional dataset to get intelligent answers with visualizations</p>
+      <h1>🧠 AI Data Intelligence Hub</h1>
+      <p>Transform your raw data into actionable insights with advanced AI-powered analysis and stunning visualizations</p>
     </div>
 
     <div class="main-card">
       <form id="analysisForm">
-        <!-- Questions file (REQUIRED) -->
         <div class="form-group">
-          <label for="questions_file">Questions File (.txt) <span style="color:#dc3545">*</span></label>
+          <label for="questions_file">📝 Analysis Questions <span style="color: var(--error)">*</span></label>
           <div class="file-input-wrapper">
             <div class="file-input" id="questionsDrop">
               <input type="file" id="questions_file" name="questions_file" accept=".txt"/>
-              <span>📁 Click to upload your questions (.txt)</span>
+              <span>📁 Upload your analysis questions (.txt)</span>
             </div>
           </div>
           <div id="questionsInfo" class="file-info"></div>
         </div>
 
-        <!-- Dataset file (OPTIONAL) -->
         <div class="form-group">
-          <label for="data_file">Upload Dataset (Optional)</label>
+          <label for="data_file">📊 Dataset (Optional)</label>
           <div class="file-input-wrapper">
             <div class="file-input" id="dataDrop">
               <input type="file" id="data_file" name="data_file" accept=".csv,.xlsx,.xls,.json,.parquet,.txt"/>
-              <span>📁 Click or drag & drop your dataset</span>
+              <span>📁 Upload your dataset for analysis</span>
             </div>
           </div>
           <div id="dataInfo" class="file-info"></div>
         </div>
 
         <div class="button-group">
-          <button type="submit" class="btn" id="submitBtn">🚀 Analyze Data</button>
-          <button type="button" class="btn btn-secondary" id="clearBtn">🗑️ Clear</button>
+          <button type="submit" class="btn" id="submitBtn">🚀 Launch Analysis</button>
+          <button type="button" class="btn btn-secondary" id="clearBtn">🗑️ Reset</button>
         </div>
       </form>
 
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p>Analyzing your data... This may take a few moments.</p>
+        <p>Processing your data with AI intelligence...</p>
       </div>
 
       <div class="results" id="results">
-        <h3>📊 Analysis Results</h3>
+        <h3>🎯 Analysis Results</h3>
         <div id="resultsContent"></div>
       </div>
     </div>
   </div>
 
-  <!-- Image Modal -->
   <div id="imageModal" class="modal">
     <span class="close">&times;</span>
     <img class="modal-content" id="modalImage" alt="Visualization"/>
   </div>
 
   <script>
-    /* ---------- Image normalization helpers ---------- */
+    // Create floating particles
+    function createParticles() {
+      const particlesContainer = document.getElementById('particles');
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 3 + 3) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Image normalization helpers
     function normalizeImageData(answer) {
       let s = null;
-      if (typeof answer === 'string') { s = answer.trim(); }
-      else if (answer && typeof answer === 'object') {
+      if (typeof answer === 'string') { 
+        s = answer.trim(); 
+      } else if (answer && typeof answer === 'object') {
         s = answer.image || answer.base64 || answer.plot || answer.data || null;
         if (typeof s === 'string') s = s.trim();
       }
@@ -304,11 +603,6 @@
       const text = (answer && typeof answer === 'object') ? JSON.stringify(answer, null, 2) : String(answer ?? '');
       if (text.includes('\n') || text.length > 120) {
         const pre = document.createElement('pre');
-        pre.style.whiteSpace = 'pre-wrap';
-        pre.style.background = '#f8f9fa';
-        pre.style.padding = '15px';
-        pre.style.borderRadius = '5px';
-        pre.style.overflow = 'auto';
         pre.textContent = text;
         container.appendChild(pre);
       } else {
@@ -316,8 +610,8 @@
       }
     }
 
-    /* ---------------- App ---------------- */
-    class DataAnalystApp {
+    // Main App Class
+    class DataIntelligenceApp {
       constructor() {
         this.form = document.getElementById('analysisForm');
         this.qFileInput = document.getElementById('questions_file');
@@ -343,43 +637,80 @@
         this.qFileInput.addEventListener('change', (e) => this.handleFileSelect(e, 'q'));
         this.dFileInput.addEventListener('change', (e) => this.handleFileSelect(e, 'd'));
         this.closeModal.addEventListener('click', () => this.hideImageModal());
-        this.modal.addEventListener('click', (e) => { if (e.target === this.modal) this.hideImageModal(); });
-        this.setupDrop(this.dDrop, (files) => { if (files && files.length > 0) { this.dFileInput.files = files; this.handleFileSelect({ target: { files } }, 'd'); } });
-        this.setupDrop(this.qDrop, (files) => { if (files && files.length > 0) { this.qFileInput.files = files; this.handleFileSelect({ target: { files } }, 'q'); } });
+        this.modal.addEventListener('click', (e) => { 
+          if (e.target === this.modal) this.hideImageModal(); 
+        });
+        this.setupDrop(this.dDrop, (files) => { 
+          if (files && files.length > 0) { 
+            this.dFileInput.files = files; 
+            this.handleFileSelect({ target: { files } }, 'd'); 
+          } 
+        });
+        this.setupDrop(this.qDrop, (files) => { 
+          if (files && files.length > 0) { 
+            this.qFileInput.files = files; 
+            this.handleFileSelect({ target: { files } }, 'q'); 
+          } 
+        });
       }
 
       setupDrop(zone, onDropFiles) {
-        zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.style.borderColor = '#667eea'; });
-        zone.addEventListener('dragleave', (e) => { e.preventDefault(); zone.style.borderColor = '#e1e5e9'; });
-        zone.addEventListener('drop', (e) => { e.preventDefault(); zone.style.borderColor = '#e1e5e9'; onDropFiles(e.dataTransfer.files); });
+        zone.addEventListener('dragover', (e) => { 
+          e.preventDefault(); 
+          zone.style.borderColor = 'var(--primary)'; 
+        });
+        zone.addEventListener('dragleave', (e) => { 
+          e.preventDefault(); 
+          zone.style.borderColor = 'var(--border)'; 
+        });
+        zone.addEventListener('drop', (e) => { 
+          e.preventDefault(); 
+          zone.style.borderColor = 'var(--border)'; 
+          onDropFiles(e.dataTransfer.files); 
+        });
       }
 
       handleFileSelect(event, type) {
         const file = event.target.files[0];
         if (type === 'q') {
-          if (file) { this.qInfo.innerHTML = `<strong>Questions:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)`; this.qInfo.style.display = 'block'; }
-          else { this.qInfo.style.display = 'none'; }
+          if (file) { 
+            this.qInfo.innerHTML = `<strong>📝 Questions:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)`; 
+            this.qInfo.style.display = 'block'; 
+          } else { 
+            this.qInfo.style.display = 'none'; 
+          }
         } else {
-          if (file) { this.dInfo.innerHTML = `<strong>Dataset:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)`; this.dInfo.style.display = 'block'; }
-          else { this.dInfo.style.display = 'none'; }
+          if (file) { 
+            this.dInfo.innerHTML = `<strong>📊 Dataset:</strong> ${file.name} (${(file.size / 1024).toFixed(2)} KB)`; 
+            this.dInfo.style.display = 'block'; 
+          } else { 
+            this.dInfo.style.display = 'none'; 
+          }
         }
       }
 
       async handleSubmit(event) {
         event.preventDefault();
-        if (!this.qFileInput.files[0]) { alert('Please upload your questions .txt file.'); return; }
-        this.showLoading(); this.hideResults();
+        if (!this.qFileInput.files[0]) { 
+          alert('Please upload your questions .txt file.'); 
+          return; 
+        }
+        this.showLoading(); 
+        this.hideResults();
 
         try {
           const formData = new FormData();
           formData.append('questions_file', this.qFileInput.files[0]);
           if (this.dFileInput.files[0]) formData.append('data_file', this.dFileInput.files[0]);
 
-          const response = await fetch('/api', { method:'POST', body:formData }); // changed endpoint
+          const response = await fetch('/api', { method: 'POST', body: formData });
 
           if (!response.ok) {
             let msg = `HTTP ${response.status}`;
-            try { const err = await response.json(); if (err && err.detail) msg = err.detail; } catch {}
+            try { 
+              const err = await response.json(); 
+              if (err && err.detail) msg = err.detail; 
+            } catch {}
             throw new Error(msg);
           }
 
@@ -395,7 +726,10 @@
 
       displayResults(data) {
         this.resultsContent.innerHTML = '';
-        if (data.error) { this.displayError(data.error); return; }
+        if (data.error) { 
+          this.displayError(data.error); 
+          return; 
+        }
         Object.entries(data).forEach(([question, answer]) => {
           const item = document.createElement('div');
           item.className = 'result-item';
@@ -405,10 +739,12 @@
           const aDiv = document.createElement('div');
           aDiv.className = 'answer';
           renderAnswerInto(answer, aDiv, (src) => this.showImageModal(src));
-          item.appendChild(qDiv); item.appendChild(aDiv);
+          item.appendChild(qDiv); 
+          item.appendChild(aDiv);
           this.resultsContent.appendChild(item);
         });
-        this.showResults(); this.scrollToResults();
+        this.showResults(); 
+        this.scrollToResults();
       }
 
       displayError(message) {
@@ -421,22 +757,51 @@
         const content = document.createElement('div');
         content.className = 'answer';
         content.textContent = message;
-        item.appendChild(title); item.appendChild(content);
+        item.appendChild(title); 
+        item.appendChild(content);
         this.resultsContent.appendChild(item);
-        this.showResults(); this.scrollToResults();
+        this.showResults(); 
+        this.scrollToResults();
       }
 
-      showImageModal(src) { this.modalImage.src = src; this.modal.style.display = 'block'; document.body.style.overflow = 'hidden'; }
-      hideImageModal() { this.modal.style.display = 'none'; document.body.style.overflow = 'auto'; }
-      showLoading() { this.loading.style.display = 'block'; this.submitBtn.disabled = true; this.submitBtn.textContent = '⏳ Analyzing...'; }
-      hideLoading() { this.loading.style.display = 'none'; this.submitBtn.disabled = false; this.submitBtn.textContent = '🚀 Analyze Data'; }
+      showImageModal(src) { 
+        this.modalImage.src = src; 
+        this.modal.style.display = 'block'; 
+        document.body.style.overflow = 'hidden'; 
+      }
+      hideImageModal() { 
+        this.modal.style.display = 'none'; 
+        document.body.style.overflow = 'auto'; 
+      }
+      showLoading() { 
+        this.loading.style.display = 'block'; 
+        this.submitBtn.disabled = true; 
+        this.submitBtn.textContent = '⏳ Processing...'; 
+      }
+      hideLoading() { 
+        this.loading.style.display = 'none'; 
+        this.submitBtn.disabled = false; 
+        this.submitBtn.textContent = '🚀 Launch Analysis'; 
+      }
       showResults() { this.results.style.display = 'block'; }
       hideResults() { this.results.style.display = 'none'; }
-      scrollToResults() { setTimeout(() => this.results.scrollIntoView({ behavior:'smooth', block:'start' }), 100); }
-      clearForm() { this.qFileInput.value = ''; this.dFileInput.value = ''; this.qInfo.style.display = 'none'; this.dInfo.style.display = 'none'; this.hideResults(); this.hideLoading(); }
+      scrollToResults() { 
+        setTimeout(() => this.results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100); 
+      }
+      clearForm() { 
+        this.qFileInput.value = ''; 
+        this.dFileInput.value = ''; 
+        this.qInfo.style.display = 'none'; 
+        this.dInfo.style.display = 'none'; 
+        this.hideResults(); 
+        this.hideLoading(); 
+      }
     }
 
-    document.addEventListener('DOMContentLoaded', () => { new DataAnalystApp(); });
+    document.addEventListener('DOMContentLoaded', () => { 
+      createParticles();
+      new DataIntelligenceApp(); 
+    });
   </script>
 </body>
 </html>
