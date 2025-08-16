@@ -13,6 +13,7 @@ from io import BytesIO
 from typing import Dict, Any, List
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse, HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 import requests
 import pandas as pd
@@ -38,6 +39,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="TDS Data Analyst Agent")
+
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 LLM_TIMEOUT_SECONDS = int(os.getenv("LLM_TIMEOUT_SECONDS", 150))
 
@@ -683,6 +693,88 @@ _FAVICON_FALLBACK_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3n+9QAAAAASUVORK5CYII="
 )
 
+@app.post("/api/json")
+async def analyze_data_json(request: dict):
+    """JSON endpoint for cURL requests - accepts questions and optional data URL"""
+    try:
+        questions = request.get("questions", "")
+        data_url = request.get("data_url", None)
+        
+        if not questions:
+            raise HTTPException(400, "Missing 'questions' field")
+        
+        pickle_path = None
+        df_preview = ""
+        dataset_uploaded = False
+        
+        if data_url:
+            dataset_uploaded = True
+            # Use the scrape tool to get data
+            tool_resp = scrape_url_to_dataframe(data_url)
+            if tool_resp.get("status") != "success":
+                raise HTTPException(400, f"Failed to fetch data from URL: {tool_resp.get('message')}")
+            
+            df = pd.DataFrame(tool_resp["data"])
+            temp_pkl = tempfile.NamedTemporaryFile(suffix=".pkl", delete=False)
+            temp_pkl.close()
+            df.to_pickle(temp_pkl.name)
+            pickle_path = temp_pkl.name
+            
+            df_preview = (
+                f"\n\nThe dataset from {data_url} has {len(df)} rows and {len(df.columns)} columns.\n"
+                f"Columns: {', '.join(df.columns.astype(str))}\n"
+                f"First rows:\n{df.head(5).to_markdown(index=False)}\n"
+            )
+        
+        # Build rules based on data presence
+        if dataset_uploaded:
+            llm_rules = (
+                "Rules:\n"
+                "1) You have access to a pandas DataFrame called `df` and its dictionary form `data`.\n"
+                "2) DO NOT call scrape_url_to_dataframe() or fetch any external data.\n"
+                "3) Use only the uploaded dataset for answering questions.\n"
+                "4) Produce a final JSON object with keys:\n"
+                '   - "questions": [ ... original question strings ... ]\n'
+                '   - "code": "..."  (Python code that fills `results` with exact question strings as keys)\n'
+                "5) For plots: use plot_to_base64() helper to return base64 image data under 100kB.\n"
+            )
+        else:
+            llm_rules = (
+                "Rules:\n"
+                "1) If you need web data, CALL scrape_url_to_dataframe(url).\n"
+                "2) Produce a final JSON object with keys:\n"
+                '   - "questions": [ ... original question strings ... ]\n'
+                '   - "code": "..."  (Python code that fills `results` with exact question strings as keys)\n'
+                "3) For plots: use plot_to_base64() helper to return base64 image data under 100kB.\n"
+            )
+        
+        llm_input = (
+            f"{llm_rules}\nQuestions:\n{questions}\n"
+            f"{df_preview if df_preview else ''}"
+            "Respond with the JSON object only."
+        )
+        
+        # Run agent
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as ex:
+            fut = ex.submit(run_agent_safely_unified, llm_input, pickle_path)
+            try:
+                result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
+            except concurrent.futures.TimeoutError:
+                return JSONResponse({"error": "Analysis timed out"}, status_code=408)
+        
+        if "error" in result:
+            return JSONResponse({"error": result["error"]}, status_code=400)
+        
+        return JSONResponse(content=result)
+        
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        logger.exception("analyze_data_json failed")
+        raise HTTPException(500, detail=str(e))
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon():
     """
@@ -700,7 +792,14 @@ async def analyze_get_info():
     return JSONResponse({
         "ok": True,
         "message": "Server is running. Use POST /api with 'questions_file' and optional 'data_file'.",
-
+        "endpoints": {
+            "file_upload": "POST /api - Upload files (questions.txt + data file)",
+            "json_api": "POST /api/json - Send JSON with questions and optional data_url",
+            "health_check": "GET /api - This endpoint"
+        },
+        "example_curl": {
+            "json_api": 'curl -X POST "https://tds-analyst-agent.vercel.app/api/json" -H "Content-Type: application/json" -d \'{"questions": "What is the average age?", "data_url": "https://example.com/data.csv"}\''
+        }
     })
 
 if __name__ == "__main__":
