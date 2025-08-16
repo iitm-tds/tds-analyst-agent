@@ -500,30 +500,74 @@ from fastapi import Request
 
 @app.post("/api")
 async def analyze_data(request: Request):
+    """Main API endpoint for file uploads and analysis"""
     try:
-        form = await request.form()
-        questions_file = None
-        data_file = None
+        # Check content type
+        content_type = request.headers.get("content-type", "")
+        
+        if "multipart/form-data" in content_type:
+            # Handle file uploads
+            form = await request.form()
+            questions_file = None
+            data_file = None
 
-        for key, val in form.items():
-            if hasattr(val, "filename") and val.filename:  # it's a file
-                fname = val.filename.lower()
-                if fname.endswith(".txt") and questions_file is None:
-                    questions_file = val
-                else:
-                    data_file = val
+            for key, val in form.items():
+                if hasattr(val, "filename") and val.filename:  # it's a file
+                    fname = val.filename.lower()
+                    if fname.endswith(".txt") and questions_file is None:
+                        questions_file = val
+                    else:
+                        data_file = val
 
-        if not questions_file:
-            raise HTTPException(400, "Missing questions file (.txt)")
+            if not questions_file:
+                raise HTTPException(400, "Missing questions file (.txt)")
+                
+            raw_questions = (await questions_file.read()).decode("utf-8")
+            keys_list, type_map = parse_keys_and_types(raw_questions)
+            
+        elif "application/json" in content_type:
+            # Handle JSON requests
+            body = await request.json()
+            questions = body.get("questions", "")
+            data_url = body.get("data_url", None)
+            
+            if not questions:
+                raise HTTPException(400, "Missing 'questions' field in JSON")
+                
+            raw_questions = questions
+            keys_list, type_map = [], {}  # No key mapping for JSON requests
+            
+            # Handle data URL if provided
+            if data_url:
+                tool_resp = scrape_url_to_dataframe(data_url)
+                if tool_resp.get("status") != "success":
+                    raise HTTPException(400, f"Failed to fetch data from URL: {tool_resp.get('message')}")
+                
+                df = pd.DataFrame(tool_resp["data"])
+                temp_pkl = tempfile.NamedTemporaryFile(suffix=".pkl", delete=False)
+                temp_pkl.close()
+                df.to_pickle(temp_pkl.name)
+                pickle_path = temp_pkl.name
+                
+                df_preview = (
+                    f"\n\nThe dataset from {data_url} has {len(df)} rows and {len(df.columns)} columns.\n"
+                    f"Columns: {', '.join(df.columns.astype(str))}\n"
+                    f"First rows:\n{df.head(5).to_markdown(index=False)}\n"
+                )
+            else:
+                pickle_path = None
+                df_preview = ""
+                
+        else:
+            raise HTTPException(400, "Unsupported content type. Use multipart/form-data for files or application/json for text")
 
-        raw_questions = (await questions_file.read()).decode("utf-8")
-        keys_list, type_map = parse_keys_and_types(raw_questions)
-
+        # Continue with the rest of the processing
         pickle_path = None
         df_preview = ""
         dataset_uploaded = False
 
-        if data_file:
+        # Handle data file uploads (only for multipart requests)
+        if "multipart/form-data" in content_type and data_file:
             dataset_uploaded = True
             filename = data_file.filename.lower()
             content = await data_file.read()
@@ -693,86 +737,7 @@ _FAVICON_FALLBACK_PNG = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO3n+9QAAAAASUVORK5CYII="
 )
 
-@app.post("/api/json")
-async def analyze_data_json(request: dict):
-    """JSON endpoint for cURL requests - accepts questions and optional data URL"""
-    try:
-        questions = request.get("questions", "")
-        data_url = request.get("data_url", None)
-        
-        if not questions:
-            raise HTTPException(400, "Missing 'questions' field")
-        
-        pickle_path = None
-        df_preview = ""
-        dataset_uploaded = False
-        
-        if data_url:
-            dataset_uploaded = True
-            # Use the scrape tool to get data
-            tool_resp = scrape_url_to_dataframe(data_url)
-            if tool_resp.get("status") != "success":
-                raise HTTPException(400, f"Failed to fetch data from URL: {tool_resp.get('message')}")
-            
-            df = pd.DataFrame(tool_resp["data"])
-            temp_pkl = tempfile.NamedTemporaryFile(suffix=".pkl", delete=False)
-            temp_pkl.close()
-            df.to_pickle(temp_pkl.name)
-            pickle_path = temp_pkl.name
-            
-            df_preview = (
-                f"\n\nThe dataset from {data_url} has {len(df)} rows and {len(df.columns)} columns.\n"
-                f"Columns: {', '.join(df.columns.astype(str))}\n"
-                f"First rows:\n{df.head(5).to_markdown(index=False)}\n"
-            )
-        
-        # Build rules based on data presence
-        if dataset_uploaded:
-            llm_rules = (
-                "Rules:\n"
-                "1) You have access to a pandas DataFrame called `df` and its dictionary form `data`.\n"
-                "2) DO NOT call scrape_url_to_dataframe() or fetch any external data.\n"
-                "3) Use only the uploaded dataset for answering questions.\n"
-                "4) Produce a final JSON object with keys:\n"
-                '   - "questions": [ ... original question strings ... ]\n'
-                '   - "code": "..."  (Python code that fills `results` with exact question strings as keys)\n'
-                "5) For plots: use plot_to_base64() helper to return base64 image data under 100kB.\n"
-            )
-        else:
-            llm_rules = (
-                "Rules:\n"
-                "1) If you need web data, CALL scrape_url_to_dataframe(url).\n"
-                "2) Produce a final JSON object with keys:\n"
-                '   - "questions": [ ... original question strings ... ]\n'
-                '   - "code": "..."  (Python code that fills `results` with exact question strings as keys)\n'
-                "3) For plots: use plot_to_base64() helper to return base64 image data under 100kB.\n"
-            )
-        
-        llm_input = (
-            f"{llm_rules}\nQuestions:\n{questions}\n"
-            f"{df_preview if df_preview else ''}"
-            "Respond with the JSON object only."
-        )
-        
-        # Run agent
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor() as ex:
-            fut = ex.submit(run_agent_safely_unified, llm_input, pickle_path)
-            try:
-                result = fut.result(timeout=LLM_TIMEOUT_SECONDS)
-            except concurrent.futures.TimeoutError:
-                return JSONResponse({"error": "Analysis timed out"}, status_code=408)
-        
-        if "error" in result:
-            return JSONResponse({"error": result["error"]}, status_code=400)
-        
-        return JSONResponse(content=result)
-        
-    except HTTPException as he:
-        raise he
-    except Exception as e:
-        logger.exception("analyze_data_json failed")
-        raise HTTPException(500, detail=str(e))
+
 
 
 @app.get("/favicon.ico", include_in_schema=False)
@@ -791,14 +756,19 @@ async def analyze_get_info():
     """Health/info endpoint. Use POST /api for actual analysis."""
     return JSONResponse({
         "ok": True,
-        "message": "Server is running. Use POST /api with 'questions_file' and optional 'data_file'.",
+        "message": "Server is running. Use POST /api for analysis.",
         "endpoints": {
-            "file_upload": "POST /api - Upload files (questions.txt + data file)",
-            "json_api": "POST /api/json - Send JSON with questions and optional data_url",
+            "file_upload": "POST /api - Upload files (multipart/form-data with questions.txt + data file)",
+            "json_api": "POST /api - Send JSON with questions and optional data_url",
             "health_check": "GET /api - This endpoint"
         },
-        "example_curl": {
-            "json_api": 'curl -X POST "https://tds-analyst-agent.vercel.app/api/json" -H "Content-Type: application/json" -d \'{"questions": "What is the average age?", "data_url": "https://example.com/data.csv"}\''
+        "usage_examples": {
+            "file_upload": "curl -X POST http://127.0.0.1:8000/api -F 'questions_file=@questions.txt' -F 'data_file=@dataset.csv'",
+            "json_api": "curl -X POST http://127.0.0.1:8000/api -H 'Content-Type: application/json' -d '{\"questions\": \"What is the average age?\", \"data_url\": \"https://example.com/data.csv\"}'"
+        },
+        "supported_formats": {
+            "questions": "Text file (.txt) or JSON string",
+            "data": "CSV, Excel (.xlsx, .xls), Parquet, JSON, Images (.png, .jpg, .jpeg)"
         }
     })
 
